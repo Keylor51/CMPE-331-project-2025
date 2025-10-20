@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Uçak Bilgileri</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+   <!-- Üst NAVBAR -->
+  <header class="navbar">
+    <div class="logo">✈️ LOGO</div>
+    <nav>
+        <a href="../index.html">Main Menu</a>
+      <a href="../Info/plane-info.html">Current State</a>
+      <a href="../search.html">Search</a>
+      <a href="../contact.html">Contact</a>
+      <a href="../help.html">Help</a>
+    </nav>
+  </header>
+
+  <!-- Sol Sütun (Sidebar) -->
+  <aside class="sidebar">
+    <ul>
+      <li><a href="plane-info.html">Plane İnformatoin</a></li>
+      <li><a href="passangers.html">Passangers</a></li>
+      <li><a href="crew.html">Crew</a></li>
+    </ul>
+  </aside>
+
+  <main class="content">
+
+    <h1>Plane Image</h1>
+
+    <iframe
+    src="../plane.html"
+    class="airplane-frame"
+    width="100%"
+    height="580"
+    frameborder="0"
+    ></iframe>
+
+    <h1>Plane Information</h1>
+
+    <div class="plane-info">
+      <table></table>
+      <p><strong>Model:</strong> Boeing 737 MAX</p>
+      <p><strong>Kalkış Saati:</strong> 12:45</p>
+      <p><strong>Varış Saati:</strong> 15:10</p>
+      <p><strong>Kalkış Noktası:</strong> İstanbul Havalimanı</p>
+      <p><strong>Varış Noktası:</strong> Berlin Brandenburg</p>
+      <p><strong>Durum:</strong> Uçuş Hazırlığında ✈️</p>
+      <p><strong>Toplam Koltuk:</strong> 180</p>
+      <p><strong>Dolu Koltuk:</strong> 142</p>
+      <p><strong>Boş Koltuk:</strong> 38</p>
+    </div>
+  </main>
+
+  <script src="../plane.js"></script>
+</body>
+</html>

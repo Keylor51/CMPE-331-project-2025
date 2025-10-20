@@ -1,0 +1,188 @@
+/* Genel ayarlar */
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: #f8f9fa;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* Üst Navbar */
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 40px;
+  z-index: 1000;
+}
+
+.navbar .logo {
+  font-weight: bold;
+  font-size: 20px;
+}
+
+.navbar nav a {
+  margin: 0 10px;
+  text-decoration: none;
+  color: #333;
+  font-weight: 500;
+}
+
+.navbar nav a:hover {
+  color: #0078ff;
+}
+
+/* Sidebar */
+.sidebar {
+  position: fixed;
+  top: 60px;
+  left: 0;
+  width: 200px;
+  height: calc(100% - 60px);
+  background-color: #f0f0f0;
+  border-right: 1px solid #ddd;
+  padding-top: 20px;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar ul li {
+  margin-bottom: 15px;
+}
+
+.sidebar ul li a {
+  text-decoration: none;
+  color: #333;
+  font-weight: 500;
+  padding: 10px 20px;
+  display: block;
+  border-radius: 6px;
+}
+
+.sidebar ul li a:hover {
+  background-color: #0078ff;
+  color: white;
+}
+
+/* İçerik Alanı */
+.content {
+  margin-left: 200px;
+  margin-top: 70px;
+  padding: 20px 40px;
+}
+
+.content h1 {
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+/* SVG uçak alanı */
+.airplane-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.airplane-svg {
+  width: 80%;
+  height: auto;
+  border: 2px solid #ccc;
+  background: white;
+  margin-bottom: 15px;
+}
+
+/* Koltuk renkleri */
+.seat {
+  cursor: pointer;
+  transition: fill 0.2s ease;
+}
+
+.seat:hover {
+  stroke: #0078ff;
+  stroke-width: 2;
+}
+
+/* Renk anlamları açıklaması */
+.legend {
+  background: #fff;
+  border: 1px solid #ccc;
+  padding: 8px 15px;
+  border-radius: 8px;
+  font-size: 14px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Responsive */
+@media (max-width: 800px) {
+  .sidebar {
+    width: 150px;
+  }
+
+  .content {
+    margin-left: 150px;
+  }
+
+  .navbar {
+    padding: 0 20px;
+  }
+}
+
+/* Ek stil ayarları */
+
+/* Yolcu ve ekip kartları */
+.passenger-grid, .crew-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.passenger-card, .crew-card {
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  padding: 15px;
+  width: 200px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.passenger-card:hover, .crew-card:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.extra-info {
+  display: none;
+  font-size: 13px;
+  margin-top: 10px;
+  color: #444;
+}
+
+.passenger-card:hover .extra-info {
+  display: block;
+}
+
+.plane-info {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  line-height: 1.8;
+}
+
+.airplane-frame {
+  border: 2px solid #ccc;
+  border-radius: 10px;
+  background: white;
+}
