@@ -1,0 +1,27 @@
+Maven compiled files
+
+target/
+*.class
+
+IDE files (VS Code, IntelliJ)
+
+.vscode/
+.idea/
+*.iml
+.settings/
+.classpath
+.project
+
+Database files (Do not push these!)
+
+*.sqlite
+*.db
+
+OS junk
+
+.DS_Store
+Thumbs.db
+
+Logs
+
+*.log
