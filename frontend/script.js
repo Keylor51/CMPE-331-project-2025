@@ -1,3 +1,6 @@
+// ====================================================================
+// CONFIGURATION AND GLOBALS
+// ====================================================================
 const API_BASE_URL = 'http://localhost:8080/api'; 
 const FLIGHT_LIST_URL = `${API_BASE_URL}/roster/flights`; 
 
@@ -139,12 +142,13 @@ async function loadRoster(flightId) {
         if (response.ok) {
             currentRosterData = await response.json();
             
-            // INITIALIZE STATE WITH AUTO-ASSIGNED DATA
+            // INITIALIZE STATE
             selectedPilots = [...currentRosterData.pilots];
             selectedCrew = [...currentRosterData.cabinCrew];
             currentMenu = ["Standard Menu"];
             selectedCrew.forEach(c => {
-                if (c.type === 'CHEF' && (c.chefRecipes || c.recipes)) {
+                if (c.type === 'CHEF') {
+                    // Normalize recipe list names
                     const recipes = c.chefRecipes || c.recipes || [];
                     if(recipes.length > 0) {
                         const randomDish = recipes[Math.floor(Math.random() * recipes.length)];
@@ -196,7 +200,16 @@ function renderSelectionTables() {
     ccBody.innerHTML = '';
     candidateCrew.forEach(c => {
         if (!selectedCrew.find(sc => sc.id === c.id)) {
-            ccBody.innerHTML += `<tr><td>${c.name}</td><td><span class="badge ${c.type}">${c.type}</span></td><td>${c.seniority}</td><td><button onclick="selectCrew(${c.id})" class="btn btn-sm btn-success">+</button></td></tr>`;
+            // FIX: Check multiple properties for languages
+            const langs = c.languages || c.knownLanguages || [];
+            const langStr = langs.length > 0 ? langs.join(', ') : '-';
+            
+            ccBody.innerHTML += `<tr>
+                <td>${c.name} <br><small style="color:#666">${langStr}</small></td>
+                <td><span class="badge ${c.type}">${c.type}</span></td>
+                <td>${c.seniority}</td>
+                <td><button onclick="selectCrew(${c.id})" class="btn btn-sm btn-success">+</button></td>
+            </tr>`;
         }
     });
 
@@ -346,11 +359,21 @@ function hideTooltip() { document.getElementById('seatTooltip').classList.add('h
 function renderExtendedView() {
     populateTable(document.getElementById('pilotTable'), selectedPilots, 
         p => `<td>${p.id}</td><td>${p.name}</td><td>${p.seniorityLevel}</td><td>${p.allowedVehicleType}</td><td>${p.age}</td>`);
+    
+    // FIX: Updated logic to display languages correctly
     populateTable(document.getElementById('crewTable'), selectedCrew, c => {
-        let info = (c.languages||c.knownLanguages||[]).join(', ');
-        if(c.type==='CHEF') info += `<br><small style="color:#d9534f"><i class="fas fa-utensils"></i> ${c.selectedDish||'Select'}</small>`;
+        // Fallback check: languages OR knownLanguages
+        const langs = c.languages || c.knownLanguages || [];
+        let info = langs.length > 0 ? langs.join(', ') : '-';
+        
+        // Add chef info if applicable
+        if(c.type==='CHEF') {
+            const recipe = c.selectedDish || 'Not selected';
+            info += `<br><small style="color:#d9534f"><i class="fas fa-utensils"></i> ${recipe}</small>`;
+        }
         return `<td>${c.id}</td><td>${c.name}</td><td>${c.type}</td><td>${info}</td><td>${c.age}</td>`;
     });
+    
     populateTable(document.getElementById('passengerTable'), currentRosterData.passengers||[], 
         p => `<td>${p.id}</td><td>${p.name}</td><td>${p.seatType}</td><td>${p.seatNumber}</td><td>${p.nationality}</td>`);
 }
