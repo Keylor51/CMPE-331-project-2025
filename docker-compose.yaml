@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  # 1. Flight API
+  flight-service:
+    image: maven:3.9.6-eclipse-temurin-21
+    container_name: flight-api
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - ~/.m2:/root/.m2 # Cache maven dependencies
+    command: mvn spring-boot:run -Dspring-boot.run.main-class=com.cmpe331.flight.FlightInfoApi
+    ports:
+      - "8081:8081"
+
+  # 2. Pilot API
+  pilot-service:
+    image: maven:3.9.6-eclipse-temurin-21
+    container_name: pilot-api
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - ~/.m2:/root/.m2
+    command: mvn spring-boot:run -Dspring-boot.run.main-class=com.cmpe331.pilot.PilotApi
+    ports:
+      - "8082:8082"
+
+  # 3. Crew API
+  crew-service:
+    image: maven:3.9.6-eclipse-temurin-21
+    container_name: crew-api
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - ~/.m2:/root/.m2
+    command: mvn spring-boot:run -Dspring-boot.run.main-class=com.cmpe331.crew.CabinCrewApi
+    ports:
+      - "8083:8083"
+
+  # 4. Passenger API
+  passenger-service:
+    image: maven:3.9.6-eclipse-temurin-21
+    container_name: passenger-api
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - ~/.m2:/root/.m2
+    command: mvn spring-boot:run -Dspring-boot.run.main-class=com.cmpe331.passenger.PassengerApi
+    ports:
+      - "8084:8084"
+
+  # 5. MongoDB Database
+  mongo-db:
+    image: mongo:latest
+    container_name: flight-mongo
+    ports:
+      - "27017:27017"
+
+  # 6. Main System
+  main-system:
+    image: maven:3.9.6-eclipse-temurin-21
+    container_name: main-system
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - ~/.m2:/root/.m2
+    # This command uses the Environment Variables defined below
+    command: mvn spring-boot:run -Dspring-boot.run.main-class=com.cmpe331.mainsystem.MainSystemApi
+    ports:
+      - "8080:8080"
+    environment:
+      - FLIGHT_API_HOST=flight-service
+      - PILOT_API_HOST=pilot-service
+      - CREW_API_HOST=crew-service
+      - PASSENGER_API_HOST=passenger-service
+      - MONGO_HOST=mongo-db
+    depends_on:
+      - flight-service
+      - pilot-service
+      - crew-service
+      - passenger-service
+      - mongo-db
