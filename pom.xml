@@ -34,6 +34,12 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency> 
 
+        <!-- Security (Login/Auth) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        
         <!-- NoSQL Support (MongoDB) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

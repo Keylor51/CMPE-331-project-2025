@@ -3,15 +3,25 @@ package com.cmpe331.mainsystem;
 import jakarta.persistence.*;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.ResponseEntity;
 
 import java.util.*;
+
+import static org.springframework.security.config.Customizer.withDefaults;
 
 @SpringBootApplication
 public class MainSystemApi {
@@ -20,7 +30,7 @@ public class MainSystemApi {
         System.setProperty("server.port", "8080");
         System.setProperty("spring.datasource.url", "jdbc:sqlite:mainsystem_db.sqlite");
         
-        // MongoDB Host (Defaults to localhost if not set in Docker)
+        // Docker/Local MongoDB Switching
         String mongoHost = System.getenv("MONGO_HOST");
         if (mongoHost == null) mongoHost = "localhost";
         System.setProperty("spring.data.mongodb.uri", "mongodb://" + mongoHost + ":27017/flight_roster_nosql");
@@ -28,11 +38,51 @@ public class MainSystemApi {
         SpringApplication.run(MainSystemApi.class, args);
     }
 
+    /**
+     * AUTHENTICATED REST TEMPLATE
+     * This is the key to Inter-Service Security.
+     * It automatically attaches "Basic admin:password" header to every request
+     * sent to Flight, Pilot, Crew, and Passenger APIs.
+     */
     @Bean
-    public RestTemplate restTemplate() {
-        return new RestTemplate();
+    public RestTemplate restTemplate(RestTemplateBuilder builder) {
+        return builder
+                .basicAuthentication("admin", "password")
+                .build();
     }
 }
+
+/**
+ * SECURITY CONFIGURATION
+ * Protects the Main System itself.
+ */
+@Configuration
+@EnableWebSecurity
+class SecurityConfig {
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(auth -> auth
+                .anyRequest().authenticated() // Lock everything
+            )
+            .httpBasic(withDefaults()); // Use Login Pop-up
+        return http.build();
+    }
+
+    @Bean
+    public InMemoryUserDetailsManager userDetailsService() {
+        UserDetails user = User.withDefaultPasswordEncoder()
+            .username("admin")
+            .password("password")
+            .roles("USER")
+            .build();
+        return new InMemoryUserDetailsManager(user);
+    }
+}
+
+// ------------------- CONTROLLER -------------------
 
 @RestController
 @RequestMapping("/api/roster")
@@ -43,7 +93,7 @@ class RosterController {
     private final RosterSqlRepository sqlRepo;
     private final RosterMongoRepository mongoRepo;
 
-    // DYNAMIC URLs: Read from Env Vars (Docker) or default to localhost (Local)
+    // Service URLs (Docker or Local)
     private final String FLIGHT_API;
     private final String PILOT_API;
     private final String CREW_API;
@@ -54,7 +104,7 @@ class RosterController {
         this.sqlRepo = sqlRepo;
         this.mongoRepo = mongoRepo;
 
-        // Configuration Logic
+        // Config logic to find other services
         String flightHost = System.getenv("FLIGHT_API_HOST");
         this.FLIGHT_API = "http://" + (flightHost != null ? flightHost : "localhost") + ":8081/api/flights";
 
@@ -73,12 +123,14 @@ class RosterController {
                                           @RequestParam(value = "dbType", defaultValue = "sql") String dbType) {
         try {
             System.out.println("--- Starting Roster Generation for " + flightId + " ---");
-            
+
             // 1. Fetch Flight
             Map flight;
             try {
                 flight = restTemplate.getForObject(FLIGHT_API + "/" + flightId, Map.class);
-            } catch (Exception e) { return ResponseEntity.status(503).body("Error connecting to Flight API at " + FLIGHT_API); }
+            } catch (Exception e) { 
+                return ResponseEntity.status(503).body("Error connecting to Flight API. Check Auth or Docker."); 
+            }
             if (flight == null) return ResponseEntity.badRequest().body("Flight not found!");
             
             String vehicleType = "Unknown";
@@ -90,21 +142,21 @@ class RosterController {
             List<Map> passengers;
             try {
                 passengers = Arrays.asList(restTemplate.getForObject(PASSENGER_API + "/flight/" + flightId, Map[].class));
-            } catch (Exception e) { return ResponseEntity.status(503).body("Error connecting to Passenger API at " + PASSENGER_API); }
+            } catch (Exception e) { return ResponseEntity.status(503).body("Error connecting to Passenger API."); }
 
             // 3. Fetch Pilots
             List<Map> selectedPilots = new ArrayList<>();
             try {
                 Map[] allPilots = restTemplate.getForObject(PILOT_API + "/vehicle/" + vehicleType, Map[].class);
                 if (allPilots != null && allPilots.length >= 2) selectedPilots = Arrays.asList(Arrays.copyOfRange(allPilots, 0, 2));
-            } catch (Exception e) { return ResponseEntity.status(503).body("Error connecting to Pilot API at " + PILOT_API); }
+            } catch (Exception e) { return ResponseEntity.status(503).body("Error connecting to Pilot API."); }
 
             // 4. Fetch Crew
             List<Map> selectedCrew = new ArrayList<>();
             try {
                 Map[] allCrew = restTemplate.getForObject(CREW_API, Map[].class);
                 if (allCrew != null && allCrew.length >= 3) selectedCrew = Arrays.asList(Arrays.copyOfRange(allCrew, 0, 3));
-            } catch (Exception e) { return ResponseEntity.status(503).body("Error connecting to Crew API at " + CREW_API); }
+            } catch (Exception e) { return ResponseEntity.status(503).body("Error connecting to Crew API."); }
 
             // 5. Build Response
             Map<String, Object> responseData = new LinkedHashMap<>();

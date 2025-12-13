@@ -5,11 +5,20 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Set;
+
+import static org.springframework.security.config.Customizer.withDefaults;
 
 @SpringBootApplication
 public class PilotApi {
@@ -40,23 +49,36 @@ public class PilotApi {
     }
 }
 
+// --- SECURITY CONFIG ---
+@Configuration
+@EnableWebSecurity
+class SecurityConfig {
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http.csrf(c -> c.disable())
+            .authorizeHttpRequests(a -> a.anyRequest().authenticated())
+            .httpBasic(withDefaults());
+        return http.build();
+    }
+
+    @Bean
+    public InMemoryUserDetailsManager userDetailsService() {
+        UserDetails user = User.withDefaultPasswordEncoder()
+            .username("admin").password("password").roles("USER").build();
+        return new InMemoryUserDetailsManager(user);
+    }
+}
+
 @RestController
 @RequestMapping("/api/pilots")
 @CrossOrigin(origins = "*")
 class PilotController {
-
     private final PilotRepository pilotRepo;
-
-    public PilotController(PilotRepository pilotRepo) {
-        this.pilotRepo = pilotRepo;
-    }
+    public PilotController(PilotRepository pilotRepo) { this.pilotRepo = pilotRepo; }
 
     @GetMapping
-    public List<Pilot> getAllPilots() {
-        return pilotRepo.findAll();
-    }
+    public List<Pilot> getAllPilots() { return pilotRepo.findAll(); }
 
-    // FIXED: Added ("vehicleType") to prevent crash
     @GetMapping("/vehicle/{vehicleType}")
     public List<Pilot> getPilotsByVehicle(@PathVariable("vehicleType") String vehicleType) {
         return pilotRepo.findByAllowedVehicleType(vehicleType);
@@ -67,44 +89,29 @@ interface PilotRepository extends JpaRepository<Pilot, Long> {
     List<Pilot> findByAllowedVehicleType(String vehicleType);
 }
 
-@Entity
-@Table(name = "pilots")
+@Entity @Table(name = "pilots")
 class Pilot {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    private String name;
-    private int age;
-    private String gender;
-    private String nationality;
-    private int allowedRangeKm; 
-    private String allowedVehicleType;
-    private String seniorityLevel;
-
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) private Long id;
+    private String name; private int age; private String gender; private String nationality;
+    private int allowedRangeKm; private String allowedVehicleType; private String seniorityLevel;
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "pilot_languages", joinColumns = @JoinColumn(name = "pilot_id"))
-    @Column(name = "language")
-    private Set<String> languages;
+    @Column(name = "language") private Set<String> languages;
 
     public Pilot() {}
     public Pilot(String name, int age, String gender, String nationality, int allowedRangeKm, String allowedVehicleType, String seniorityLevel) {
-        this.name = name;
-        this.age = age;
-        this.gender = gender;
-        this.nationality = nationality;
-        this.allowedRangeKm = allowedRangeKm;
-        this.allowedVehicleType = allowedVehicleType;
-        this.seniorityLevel = seniorityLevel;
+        this.name = name; this.age = age; this.gender = gender; this.nationality = nationality;
+        this.allowedRangeKm = allowedRangeKm; this.allowedVehicleType = allowedVehicleType; this.seniorityLevel = seniorityLevel;
     }
-
+    // Getters/Setters (simplified for brevity, assume present or Lombok)
     public Long getId() { return id; }
+    public String getAllowedVehicleType() { return allowedVehicleType; }
+    public String getSeniorityLevel() { return seniorityLevel; }
     public String getName() { return name; }
     public int getAge() { return age; }
     public String getGender() { return gender; }
     public String getNationality() { return nationality; }
     public int getAllowedRangeKm() { return allowedRangeKm; }
-    public String getAllowedVehicleType() { return allowedVehicleType; }
-    public String getSeniorityLevel() { return seniorityLevel; }
     public Set<String> getLanguages() { return languages; }
     public void setLanguages(Set<String> languages) { this.languages = languages; }
 }
