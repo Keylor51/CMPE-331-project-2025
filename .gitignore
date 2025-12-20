@@ -1,0 +1,32 @@
+Maven Build Klasörleri (Derlenmiş kodlar)
+
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!/src/main//target/
+!/src/test//target/
+
+IDE Ayarları (Gerekli değil)
+
+.idea/
+.vscode/
+*.swp
+*.iml
+.classpath
+.project
+.settings/
+.sts4-cache/
+
+İşletim Sistemi Dosyaları
+
+.DS_Store
+Thumbs.db
+
+Yerel Veritabanı Dosyaları (GitHub'a gitmemeli)
+
+*.sqlite
+*.db
+*.log
+
+Docker Volume verileri (Eğer lokalde oluştuysa)
+
+mongo_data/

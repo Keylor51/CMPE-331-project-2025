@@ -1,0 +1,132 @@
+version: '3.8'
+
+services:
+  # 1. Flight Info API (SQL Only)
+  flight-service:
+    image: maven:3.9.6-eclipse-temurin-21
+    container_name: flight-info-api
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - ~/.m2:/root/.m2
+      # Had to separate build targets so they don't mess each other up
+      - flight-target:/app/target
+    environment:
+      MAVEN_OPTS: "-Xmx256m"
+      SPRING_AUTOCONFIGURE_EXCLUDE: "org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration,org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration,org.springframework.boot.autoconfigure.data.mongo.MongoRepositoriesAutoConfiguration"
+    command: mvn spring-boot:run -Dspring-boot.run.main-class=com.cmpe331.flight.FlightInfoApi
+    ports:
+      - "8081:8081"
+    networks:
+      - flight-network
+
+  # 2. Pilot API (SQL Only)
+  pilot-service:
+    image: maven:3.9.6-eclipse-temurin-21
+    container_name: pilot-api
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - ~/.m2:/root/.m2
+      # Had to separate build targets so they don't mess each other up
+      - pilot-target:/app/target
+    environment:
+      MAVEN_OPTS: "-Xmx256m"
+      SPRING_AUTOCONFIGURE_EXCLUDE: "org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration,org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration,org.springframework.boot.autoconfigure.data.mongo.MongoRepositoriesAutoConfiguration"
+    command: mvn spring-boot:run -Dspring-boot.run.main-class=com.cmpe331.pilot.PilotApi
+    ports:
+      - "8082:8082"
+    networks:
+      - flight-network
+
+  # 3. Crew API (SQL Only)
+  crew-service:
+    image: maven:3.9.6-eclipse-temurin-21
+    container_name: crew-api
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - ~/.m2:/root/.m2
+      # Had to separate build targets so they don't mess each other up
+      - crew-target:/app/target
+    environment:
+      MAVEN_OPTS: "-Xmx256m"
+      SPRING_AUTOCONFIGURE_EXCLUDE: "org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration,org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration,org.springframework.boot.autoconfigure.data.mongo.MongoRepositoriesAutoConfiguration"
+    command: mvn spring-boot:run -Dspring-boot.run.main-class=com.cmpe331.crew.CabinCrewApi
+    ports:
+      - "8083:8083"
+    networks:
+      - flight-network
+
+  # 4. Passenger API (SQL Only)
+  passenger-service:
+    image: maven:3.9.6-eclipse-temurin-21
+    container_name: passenger-api
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - ~/.m2:/root/.m2
+      # Had to separate build targets so they don't mess each other up
+      - passenger-target:/app/target
+    environment:
+      MAVEN_OPTS: "-Xmx256m"
+      SPRING_AUTOCONFIGURE_EXCLUDE: "org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration,org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration,org.springframework.boot.autoconfigure.data.mongo.MongoRepositoriesAutoConfiguration"
+    command: mvn spring-boot:run -Dspring-boot.run.main-class=com.cmpe331.passenger.PassengerApi
+    ports:
+      - "8084:8084"
+    networks:
+      - flight-network
+
+  # 5. MongoDB Database
+  mongo-db:
+    image: mongo:latest
+    container_name: flight-mongo
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "27017:27017"
+    networks:
+      - flight-network
+
+  # 6. Main System API (SQL + Mongo)
+  main-system:
+    image: maven:3.9.6-eclipse-temurin-21
+    container_name: main-system-api
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - ~/.m2:/root/.m2
+      # Had to separate build targets so they don't mess each other up
+      - main-target:/app/target
+    environment:
+      MAVEN_OPTS: "-Xmx256m"
+      # Only this one can connect to Mongo
+      SPRING_DATA_MONGODB_URI: mongodb://flight-mongo:27017/rosterdb
+      # Passing service addresses as env vars
+      FLIGHT_HOST: flight-info-api
+      PILOT_HOST: pilot-api
+      CREW_HOST: crew-api
+      PASSENGER_HOST: passenger-api
+    command: mvn spring-boot:run -Dspring-boot.run.main-class=com.cmpe331.mainsystem.MainSystemApi
+    ports:
+      - "8080:8080"
+    depends_on:
+      - flight-service
+      - pilot-service
+      - crew-service
+      - passenger-service
+      - mongo-db
+    networks:
+      - flight-network
+
+networks:
+  flight-network:
+    driver: bridge
+
+volumes:
+  mongo_data:
+  flight-target:
+  pilot-target:
+  crew-target:
+  passenger-target:
+  main-target:

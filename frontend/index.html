@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flight Roster System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-brand"><i class="fas fa-plane-departure"></i> <span>SkyRoster <small>Manager</small></span></div>
+        <div id="userInfo" class="user-profile hidden">
+            <div class="user-details"><span class="welcome-text">Welcome back,</span><span id="userDisplay" class="username">Admin</span></div>
+            <button onclick="logout()" class="btn btn-icon" title="Logout"><i class="fas fa-sign-out-alt"></i></button>
+        </div>
+    </nav>
+
+    <div class="main-wrapper">
+        <section id="loginSection" class="fade-in">
+            <div class="login-card">
+                <div class="login-header">
+                    <div class="icon-bg"><i class="fas fa-user-lock"></i></div>
+                    <h2>System Login</h2>
+                    <p>Enter credentials to access.</p>
+                    <p style="font-size: 0.8rem; color: #666; margin-top: 5px;">(Available: admin, pilot_user, crew_user)</p>
+                </div>
+                <form onsubmit="handleLogin(event)" class="login-form">
+                    <div class="input-group"><i class="fas fa-user input-icon"></i><input type="text" placeholder="Username" required></div>
+                    <div class="input-group"><i class="fas fa-key input-icon"></i><input type="password" placeholder="Password" required></div>
+                    <button type="submit" class="btn btn-primary btn-block">Access Dashboard</button>
+                </form>
+            </div>
+        </section>
+
+        <section id="searchSection" class="hidden fade-in">
+            <div class="content-header"><h2><i class="fas fa-search"></i> Flight Operations</h2><p>Manage existing or schedule new.</p></div>
+            <div class="search-actions-container">
+                <div class="search-box"><i class="fas fa-search search-icon"></i><input type="text" id="flightIdInput" onkeyup="filterFlights()" placeholder="Type flight number..."></div>
+                <button id="createFlightBtn" onclick="openCreateFlightModal()" class="btn btn-success"><i class="fas fa-plus"></i> Create New Flight</button>
+            </div>
+            <div id="flightListContainer" class="card table-card">
+                <div class="card-header"><h3>Active Flight Schedule</h3></div>
+                <div class="table-responsive">
+                    <table class="modern-table" id="flightsTable">
+                        <thead><tr><th>Flight No</th><th>From</th><th>To</th><th>Date & Time</th><th>Range (km)</th><th class="text-right">Action</th></tr></thead>
+                        <tbody id="flightsTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="rosterSection" class="hidden fade-in">
+            <div class="workspace-header">
+                <div class="flight-title"><button onclick="goBack()" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> Back</button><h2 id="selectedFlightTitle">Loading...</h2></div>
+                <div class="action-buttons">
+                    <button onclick="exportJson()" class="btn btn-outline"><i class="fas fa-file-export"></i> JSON</button>
+                    <button id="saveRosterBtn" onclick="openSaveModal()" class="btn btn-success"><i class="fas fa-save"></i> Save</button>
+                </div>
+            </div>
+            <div class="tabs-container">
+                <button class="tab-btn active" onclick="switchView('tabular')"><i class="fas fa-table"></i> Tabular View</button>
+                <button class="tab-btn" onclick="switchView('plane')"><i class="fas fa-couch"></i> Plane View</button>
+                <button class="tab-btn" onclick="switchView('extended')"><i class="fas fa-list-alt"></i> Extended View</button>
+            </div>
+
+            <div id="tabularView" class="view-content">
+                <div class="grid-layout">
+                    <div class="card selection-card">
+                        <div class="card-header blue"><h3><i class="fas fa-user-pilot"></i> Cockpit Crew</h3></div>
+                        <div class="card-body">
+                            <div class="pool-box"><h5>Selected</h5><table id="selectedPilotTable" class="compact-table"><tbody></tbody></table></div>
+                            <div class="divider"><i class="fas fa-exchange-alt"></i></div>
+                            <div class="pool-box"><h5>Available Pool</h5><div class="table-compact-wrapper scrollable"><table id="candidatePilotTable" class="compact-table"><tbody></tbody></table></div></div>
+                        </div>
+                    </div>
+                    <div class="card selection-card">
+                        <div class="card-header orange"><h3><i class="fas fa-user-tie"></i> Cabin Crew</h3></div>
+                        <div class="card-body">
+                            <div class="pool-box"><h5>Selected</h5><table id="selectedCrewTable" class="compact-table"><tbody></tbody></table></div>
+                            <div class="divider"><i class="fas fa-exchange-alt"></i></div>
+                            <div class="pool-box"><h5>Available Pool</h5><div class="table-compact-wrapper scrollable"><table id="candidateCrewTable" class="compact-table"><tbody></tbody></table></div></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="info-bar-container">
+                    <div id="crewValidationMsg" class="status-box">Checking rules...</div>
+                    <div id="flightMenuDisplay" class="menu-box hidden"><div class="menu-icon"><i class="fas fa-utensils"></i></div><div class="menu-content"><span class="label">Menu</span><span id="menuItems" class="value">Standard</span></div></div>
+                </div>
+
+                <!-- UPDATED PART: Includes passengers, scrollable table -->
+                <div class="card mt-4" style="margin-top: 20px;">
+                    <div class="card-header" style="background: #f8f9fa; border-bottom: 1px solid #eee;">
+                        <h3 style="color: #2c3e50; font-size: 1.1rem;"><i class="fas fa-clipboard-list"></i> Final Flight Manifest (Crew & Passengers)</h3>
+                    </div>
+                    <!-- Scrollable Wrapper -->
+                    <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                        <table class="modern-table">
+                            <thead style="position: sticky; top: 0; background: white; z-index: 10;">
+                                <tr>
+                                    <th>Role</th>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Rank / Seat No</th>
+                                    <th>Nationality</th>
+                                    <th>Info / Languages</th>
+                                </tr>
+                            </thead>
+                            <tbody id="finalCrewTableBody">
+                                <!-- This will be filled by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="planeView" class="view-content hidden">
+                <div class="plane-wrapper">
+                    <div class="fuselage">
+                        <div class="cockpit-nose"><i class="fas fa-wind"></i></div>
+                        <div class="section-label">COCKPIT</div><div id="cockpitGrid" class="cockpit-grid"></div>
+                        <div class="section-divider"></div>
+                        <div class="section-label">CABIN CREW</div><div id="cabinCrewGrid" class="crew-grid"></div>
+                        <div class="section-divider"></div>
+                        <div class="section-label">PASSENGERS</div><div id="passengerGrid" class="seat-grid passenger-grid"></div>
+                        <div class="fuselage-tail"></div>
+                    </div>
+                    <div class="legend">
+                        <div class="legend-item"><span class="seat-sample pilot"></span> Pilot</div>
+                        <div class="legend-item"><span class="seat-sample crew"></span> Crew</div>
+                        <div class="legend-item"><span class="seat-sample business occupied"></span> Bus. (Occ)</div>
+                        <div class="legend-item"><span class="seat-sample economy"></span> Empty</div>
+                    </div>
+                </div>
+                <div id="seatTooltip" class="custom-tooltip hidden"></div>
+            </div>
+
+            <div id="extendedView" class="view-content hidden">
+                <div class="card mb-4"><div class="card-header"><h3><i class="fas fa-id-badge"></i> Pilot Details</h3></div><table id="pilotTable" class="modern-table"><thead></thead><tbody></tbody></table></div>
+                <div class="card mb-4"><div class="card-header"><h3><i class="fas fa-users"></i> Cabin Crew Details</h3></div><table id="crewTable" class="modern-table"><thead></thead><tbody></tbody></table></div>
+                <div class="card"><div class="card-header"><h3><i class="fas fa-ticket-alt"></i> Passenger Manifest</h3></div><table id="passengerTable" class="modern-table"><thead></thead><tbody></tbody></table></div>
+            </div>
+        </section>
+    </div>
+
+    <!-- MODALS -->
+    <div id="saveModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header"><h3>Save Configuration</h3><span class="close-btn" onclick="closeModal('saveModal')">&times;</span></div>
+            <div class="modal-body">
+                <p>Select database format:</p>
+                <div class="modal-actions">
+                    <button onclick="saveToDB('sql')" class="btn btn-primary btn-lg">SQL Database</button>
+                    <button onclick="saveToDB('mongo')" class="btn btn-outline btn-lg">NoSQL (Mongo)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="createFlightModal" class="modal-overlay">
+        <div class="modal-card" style="max-width: 500px;">
+            <div class="modal-header"><h3><i class="fas fa-plane-arrival"></i> Create New Flight</h3><span class="close-btn" onclick="closeModal('createFlightModal')">&times;</span></div>
+            <div class="modal-body" style="text-align: left;">
+                <form id="createFlightForm" onsubmit="handleCreateFlight(event)">
+                    <div class="form-group"><label>Flight Number</label><input type="text" name="flightNumber" placeholder="Ex: TK9999" required class="form-input"></div>
+                    <div class="form-row">
+                        <div class="form-group half"><label>From</label><select name="source" id="sourceSelect" class="form-input" onchange="calculateDistance()" required><option value="">Select</option></select></div>
+                        <div class="form-group half"><label>To</label><select name="destination" id="destSelect" class="form-input" onchange="calculateDistance()" required><option value="">Select</option></select></div>
+                    </div>
+                    <div class="form-group"><label>Date & Time</label><input type="datetime-local" name="dateTime" required class="form-input"></div>
+                    <div class="form-group"><label>Distance (km)</label><input type="number" name="distance" id="distanceInput" placeholder="Auto-calculated" readonly class="form-input" style="background-color: #f9f9f9;"></div>
+                    <div class="form-group"><label>Aircraft Type</label>
+                        <select name="vehicleType" class="form-input">
+                            <option value="Embraer E195">Regional Jet (Embraer E195)</option>
+                            <option value="Boeing 737-800">Narrow Body (Boeing 737)</option>
+                            <option value="Boeing 787 Dreamliner">Wide Body (Boeing 787)</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block mt-3">Create & Open Roster</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
