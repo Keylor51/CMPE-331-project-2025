@@ -24,7 +24,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
-
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import java.util.*;
 import java.time.Duration;
 import java.util.stream.Collectors;
@@ -131,7 +131,7 @@ class RosterController {
 
     @GetMapping("/generate/{flightId}")
     public ResponseEntity<?> generateRoster(@PathVariable("flightId") String rawFlightId, 
-                                          @RequestParam(value = "forceNew", required = false) boolean forceNew) {
+                                            @RequestParam(value = "forceNew", required = false) boolean forceNew) {
         
         String flightId = normalizeId(rawFlightId);
         System.out.println("Processing Roster for Normalized ID: " + flightId + " (ForceNew: " + forceNew + ")");
@@ -401,9 +401,15 @@ class RosterController {
                 sqlRepo.save(entity);
             }
             return ResponseEntity.ok("Saved to " + dbType);
+            
+        } catch (IllegalArgumentException e) {
+            // HATA DÜZELTME: Testin beklediği "Validation Error" kelimesini ekledik
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Collections.singletonMap("error", "Validation Error: " + e.getMessage()));
+            
         } catch (Exception e) { 
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Save failed: " + e.getMessage()); 
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Collections.singletonMap("error", e.getMessage())); 
         }
     }
     
